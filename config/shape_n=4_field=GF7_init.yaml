@@ -1,0 +1,14 @@
+degree_sampling: uniform
+density: 1.0
+field: GF7
+gb_type: shape
+max_degree_F: 3
+max_degree_G: 5
+max_num_terms_F: 2
+max_num_terms_G: 5
+max_size_F: 6
+num_duplicants: 1
+num_samples_test: 1000
+num_samples_train: 1000000
+num_var: 4
+term_sampling: uniform

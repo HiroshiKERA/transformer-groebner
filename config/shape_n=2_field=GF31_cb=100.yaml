@@ -1,0 +1,14 @@
+degree_sampling: ''
+density: 1.0
+field: GF31
+gb_type: shape
+max_degree_F: 3
+max_degree_G: 5
+max_num_terms_F: 3
+max_num_terms_G: 5
+max_size_F: 4
+num_duplicants: 1
+num_samples_test: 1000
+num_samples_train: 1000000
+num_var: 2
+term_sampling: ''

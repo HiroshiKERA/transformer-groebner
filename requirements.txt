@@ -1,0 +1,16 @@
+accelerate
+jupyter
+matplotlib
+optimum
+py-timeout
+pyyaml
+scikit-learn
+tensorboard
+transformers
+wandb
+# SageMath 10.0+
+# sage --pip install joblib
+# sage --pip install optimum
+# sage --pip install py-timeout
+# sage --pip install torch
+# sage --pip install transformers

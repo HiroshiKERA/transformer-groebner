@@ -1,0 +1,15 @@
+# Ignore contents of the data directory, but keep the directory itself
+/data/*
+/results/*
+!/data/.gitkeep
+!/results/.gitkeep
+
+# Ignore sage directory
+/sage/
+/wandb/
+/misc/
+
+# Commonly ignored files
+*.log
+*.tmp
+.DS_Store
