@@ -269,4 +269,4 @@ class TransformerForPolynomials(PreTrainedModel):
                 decoder_input_labels = decoder_input_labels[:, :k+2] if has_continuous_tokens else None
                 break
         
-        return decoder_input, decoder_input_labels if has_continuous_tokens else decoder_input
+        return (decoder_input, decoder_input_labels) if has_continuous_tokens else decoder_input

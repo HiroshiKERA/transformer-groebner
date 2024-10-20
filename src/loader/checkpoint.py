@@ -27,7 +27,8 @@ def load_config(save_path):
     save_path            
     config_path = os.path.join(save_path, 'config.json')
     config = PretrainedConfig.from_json_file(config_path)
-    # config.positional_encoding = 'sinusoidal'
+
+    config.regression_weight = 0.1
     return config
 
 def load_pretrained_model(config, save_path, checkpoint_path=None, device_id=0):
