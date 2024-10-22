@@ -1,5 +1,6 @@
 # Ignore contents of the data directory, but keep the directory itself
 /data/*
+/data2/*
 /results/*
 !/data/.gitkeep
 !/results/.gitkeep

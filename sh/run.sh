@@ -3,14 +3,12 @@ gpu_id=1
 
 task=shape
 nvars=2
-field=RR
+field=GF7
 max_coefficient=100  # should be higher than coeff_bound
 max_degree=20  # should be higher than max_degree_F * 2 + max_degree_G
 
-
-
-# encoding_method=standard
-encoding_method=hybrid
+encoding_method=standard
+# encoding_method=hybrid
 
 positional_encoding=embedding
 # positional_encoding=sinusoidal
@@ -22,13 +20,16 @@ data_name=${task}_n=${nvars}_field=${field} #_init
 data_path=data/${task}/${data_name}/data_${field}_n=${nvars}
 data_config_path=config/${data_name}.yaml
 
-group=${encoding_method}_${positional_encoding} #_init
+model=bart
+
+group=${encoding_method}_${model} #_${positional_encoding} #_init
 _save_path=${field}_n=${nvars}_ep=${epochs}_bs=${batch_size}
 save_path=results/${task}/${group}/${_save_path}
 run_name=${task}_${_save_path}
 
 mkdir -p $save_path
 CUDA_VISIBLE_DEVICES=$gpu_id python3 src/main.py  --save_path $save_path \
+                                            --model model \
                                             --data_path $data_path \
                                             --data_config_path $data_config_path \
                                             --task $task \

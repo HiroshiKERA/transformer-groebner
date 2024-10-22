@@ -1,10 +1,11 @@
 task="shape"
-num_variables_range=(3 4 5)
+num_variables_range=(2 3 4 5)
 fields=("GF7" "GF31" "QQ" "RR")
 
 for num_variables in "${num_variables_range[@]}"; do
     for field in "${fields[@]}"; do
-        config="${task}_n=${num_variables}_field=${field}"
+
+        config="${task}_n=${num_variables}_field=${field}_uniform"
         save_dir="data/${task}/${config}"
         mkdir -p "$save_dir"
         
@@ -19,4 +20,4 @@ for num_variables in "${num_variables_range[@]}"; do
     done
 done
 
-echo "All configurations completed."
+echo "All datasets generated."
