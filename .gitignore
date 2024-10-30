@@ -13,6 +13,7 @@ _*
 
 
 # Commonly ignored files
+nohup.out
 *.log
 *.tmp
 .DS_Store
