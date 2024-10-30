@@ -5,6 +5,7 @@
 /data/
 /results/
 /config/
+/dump/
 
 # Ignore anything starting with an underscore
 _*/
