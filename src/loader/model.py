@@ -1,6 +1,5 @@
 
-def load_model(model_name, params, tokenizer=None, vocab=None):
-
+def load_model(model_name, params, tokenizer=None, vocab=None, cuda=True):
 
     if model_name == 'base':
         from transformers import PretrainedConfig
@@ -34,8 +33,32 @@ def load_model(model_name, params, tokenizer=None, vocab=None):
         model = TransformerForPolynomials(config)
 
     elif model_name == 'bart':
-        from transformers import  BartConfig 
-        from .models.bart import BartForPolynomialSystemGeneration
+        from transformers import BartConfig, BartForConditionalGeneration
+
+        config = BartConfig(
+            encoder_layers=params.num_encoder_layers,
+            encoder_attention_heads=params.nhead,
+            decoder_layers=params.num_decoder_layers,
+            decoder_attention_heads=params.nhead,
+            vocab_size=len(tokenizer.vocab),
+            d_model=params.d_model,
+            encoder_ffn_dim=params.dim_feedforward,
+            decoder_ffn_dim=params.dim_feedforward,
+            pad_token_id=tokenizer.pad_token_id,
+            bos_token_id=tokenizer.bos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+            cls_token_id=tokenizer.cls_token_id,
+            sep_token_id=tokenizer.sep_token_id,
+            unk_token_id=tokenizer.unk_token_id,
+            max_position_embeddings=params.max_sequence_length,
+            decoder_start_token_id=tokenizer.bos_token_id,
+        )
+        
+        model = BartForConditionalGeneration(config)
+        
+    elif model_name == 'bart+':
+        from transformers import BartConfig 
+        from .models.bart import BartForConditionalGenerationPlus
         
         assert(tokenizer is not None)
 
@@ -64,12 +87,12 @@ def load_model(model_name, params, tokenizer=None, vocab=None):
             continuous_embedding_model=params.continuous_embedding_model,
         )
         
-        model = BartForPolynomialSystemGeneration(config)
+        model = BartForConditionalGenerationPlus(config)
         
     else:
         raise ValueError(f"Unknown model name: {model_name}")
     
-    model.cuda()
+    if cuda: model.cuda()
     
     return model
 

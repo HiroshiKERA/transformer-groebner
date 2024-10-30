@@ -34,9 +34,6 @@ class ContinuousEmbedding(nn.Module):
     def __init__(self, hidden_dim=128, embedding_dim=128, model='ffn'):
         super().__init__()
         
-        # self.embedding = nn.Sequential(nn.Linear(1, hidden_dim), 
-        #                                 nn.ReLU(), 
-        #                                 nn.Linear(hidden_dim, embedding_dim))
         if 'ffn' in model:
             num_hidden_layers = int(model[3:]) - 1 if len(model) > 3 else 0
             hidden_layers = []
@@ -56,35 +53,6 @@ class ContinuousEmbedding(nn.Module):
         x = x.unsqueeze(-1)
         x = self.embedding(x)
         return x
-
-
-# class HybridEmbedding(nn.Module):
-#     def __init__(self, discrete_vocab_size, continuous_hidden_dim=128, embedding_dim=128, padding_idx=-100, continuous_embedding_model='ffn'):
-#         super().__init__()
-#         self.embedding_dim              = embedding_dim
-#         self.d_embedding                = nn.Embedding(discrete_vocab_size, embedding_dim, padding_idx=padding_idx)
-#         self.continuous_embedding_model  = continuous_embedding_model
-        
-#         self.c_embedding = ContinuousEmbedding(hidden_dim=continuous_hidden_dim, embedding_dim=embedding_dim, model=continuous_embedding_model)
-    
-#     def forward(self, x: Tensor, x_contineuous_labels: Tensor = None) -> Tensor:
-#         """
-#         Args:
-#             x: Tensor, shape [batch_size, seq_len]
-#             labels: Tensor, shape [batch_size, continous_vocab_size], float for target tokens and NaN for others.
-#         """
-#         embedding = torch.zeros(*x.shape, self.embedding_dim).to(x.device)
-
-#         is_continuous = x_contineuous_labels.isfinite()
-        
-#         discrete_ids = x[~is_continuous].long()
-#         embedding[~is_continuous, :] = self.d_embedding(discrete_ids)
-
-#         continuous_ids = x_contineuous_labels[is_continuous]
-#         embedding[is_continuous, :] = self.c_embedding(continuous_ids.view(-1)).to(embedding.dtype) # accumulate continuous embeddings (supposed exclusive though)
-        
-#         return embedding
-
 
 class HybridEmbedding(nn.Module):
     def __init__(self, discrete_vocab_size, continuous_vocab_size=0, continuous_hidden_dim=128, embedding_dim=128, padding_idx=-100, continuous_embedding_model='ffn'):

@@ -30,13 +30,12 @@ def write_to_file(filename, string_list):
         for string in string_list:
             file.write(string + "\n")
 
-def to_cuda(*args):
-    """
-    Move tensors to CUDA.
-    """
-    if not CUDA:
-        return args
-    return [None if x is None else x.cuda() for x in args]
+def to_cuda(tensor_dict):
+    for k in tensor_dict:
+        if isinstance(tensor_dict[k], torch.Tensor):
+            tensor_dict[k] = tensor_dict[k].cuda()
+            
+    return tensor_dict
 
 
 class TimeoutError(BaseException):

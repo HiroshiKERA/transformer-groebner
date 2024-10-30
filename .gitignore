@@ -1,14 +1,15 @@
-# Ignore contents of the data directory, but keep the directory itself
-/data/*
-/data2/*
-/results/*
-!/data/.gitkeep
-!/results/.gitkeep
-
-# Ignore sage directory
+# Ignore directories
 /sage/
 /wandb/
 /misc/
+/data/
+/results/
+/config/
+
+# Ignore anything starting with an underscore
+_*/
+_*
+
 
 # Commonly ignored files
 *.log

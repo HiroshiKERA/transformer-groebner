@@ -32,7 +32,7 @@ class CustomBartModel(BartModel):
         self.post_init()
 
 
-class BartForPolynomialSystemGeneration(BartPreTrainedModel, GenerationMixin):
+class BartForConditionalGenerationPlus(BartPreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _tied_weights_keys = ["encoder.embed_tokens.weight", "decoder.embed_tokens.weight"] #, "lm_head.weight"]
     _keys_to_ignore_on_load_missing = ["final_logits_bias"]
@@ -219,29 +219,27 @@ class BartForPolynomialSystemGeneration(BartPreTrainedModel, GenerationMixin):
         input_ids = input_ids.to(device)
         input_continuous_labels = input_continuous_labels.to(device)
 
-        if max_length == None: 
+        if max_length is None: 
             max_length = self.config.max_position_embeddings
                            
         inputs_embeds = self.input_embedding(input_ids, input_continuous_labels)
         
-        # decoderへの入力を作成
         dec_input = torch.full((input_ids.shape[0], max_length+1), self.config.pad_token_id, dtype=torch.float32).to(device) # fill with padding
         target_continuous_labels = torch.full((*dec_input.shape, continuous_vocab_size), torch.nan, dtype=torch.float32).to(device)
 
-        dec_input[:, 0] = self.config.bos_token_id  # 先頭を開始タグにする
+        dec_input[:, 0] = self.config.bos_token_id 
     
-        # マスクを作成
         decoder_attention_mask = torch.full_like(dec_input, False, dtype=torch.bool).to(device)
         decoder_attention_mask[:, 0] = True
 
         finished = dec_input[:, 0] == eos_token_id
         finished_len = max_length - 1
         for i in range(max_length):
-            decoder_inputs_embeds = self.input_embedding(dec_input[~finished], target_continuous_labels[~finished])
+            decoder_inputs_embeds = self.input_embedding(dec_input[~finished, :i+1], target_continuous_labels[~finished, :i+1])
             outputs = self.model(
                 None,
                 attention_mask          = attention_mask[~finished],
-                decoder_attention_mask  = decoder_attention_mask[~finished],
+                decoder_attention_mask  = decoder_attention_mask[~finished, :i+1],
                 inputs_embeds           = inputs_embeds[~finished],
                 decoder_inputs_embeds   = decoder_inputs_embeds,)
 

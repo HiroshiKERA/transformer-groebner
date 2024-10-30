@@ -52,7 +52,7 @@ def set_tokenizer(vocab, max_seq_length=1024):
     bos_token = SPECIAL_TOKEN_MAP['bos_token']
     eos_token = SPECIAL_TOKEN_MAP['eos_token']
     tok.post_processor = TemplateProcessing(
-        single=f"$A {eos_token}",
+        single=f"{bos_token} $A {eos_token}",
         special_tokens=[(bos_token, tok.token_to_id(bos_token)), \
                         (eos_token, tok.token_to_id(eos_token))],
     )

@@ -7,7 +7,7 @@ import datetime
 from zoneinfo import ZoneInfo
 
 # from trainer import Trainer
-from loader.data import _load_data, SimpleDataCollator, HybridDataCollator, BartDataCollator
+from loader.data import _load_data, SimpleDataCollator, HybridDataCollator, BartDataCollator, BartPlusDataCollator
 from loader.model import load_model 
 from trainer.utils import compute_metrics, preprocess_logits_for_metrics, LimitStepsCallback
 from misc.utils import count_cuda_devices
@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore", message="Was asked to gather along dimension 0
 warnings.filterwarnings("ignore", message="The PyTorch API of nested tensors is in prototype stage")
 
 
-import os
+# import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 def get_parser():
@@ -96,13 +96,14 @@ def get_parser():
 
     # environment parameters
     parser.add_argument("--resume_from_checkpoint", action='store_true', default=False)
+    parser.add_argument("--wandb_id", type=str, default=None)
     parser.add_argument("--dryrun", action='store_true', default=False)
     
     ## Dev
     # parser.add_argument('--regression_weight', type=float, default=0.1)
     parser.add_argument('--regression_weights', nargs="*", type=float)
-    parser.add_argument("--continuous_coefficient", action='store_true', default=False)
-    parser.add_argument("--continuous_exponent", action='store_true', default=False)
+    # parser.add_argument("--continuous_coefficient", action='store_true', default=False)
+    # parser.add_argument("--continuous_exponent", action='store_true', default=False)
     # parser.add_argument("--support_learning", action='store_true', default=False)
     
 
@@ -124,13 +125,18 @@ def main():
     with open(params.data_config_path, 'r') as f:
         data_config = yaml.safe_load(f)
 
-    trainset    = _load_data(f'{params.data_path}.train.lex.infix')
-    testset     = _load_data(f'{params.data_path}.test.lex.infix')
+    if params.encoding_method == 'hybrid' and params.field == 'QQ':
+        data_encoding = 'infix+'
+    else:
+        data_encoding = 'infix'
+
+    trainset    = _load_data(f'{params.data_path}.train.lex.{data_encoding}')
+    testset     = _load_data(f'{params.data_path}.test.lex.{data_encoding}')
 
     if params.dryrun:
         trainset.input = trainset.input[:1000]
         trainset.target = trainset.target[:1000]
-        params.epochs = 1
+        params.epochs = 8
         params.save_path = os.path.join(os.path.dirname(params.save_path), 'dryrun')
         params.exp_name = 'dryrun'
 
@@ -140,18 +146,22 @@ def main():
     from dataset.tokernizer import set_tokenizer, set_vocab
     
     use_continous_token = params.encoding_method == 'hybrid'
-    
     vocab = set_vocab(params.num_variables, 
                         field=params.field, 
                         max_coeff=params.max_coefficient, 
                         max_degree=params.max_degree, 
                         continuous_coefficient=use_continous_token, 
                         continuous_exponent=False)
-    tokenizer = set_tokenizer(vocab)
+    tokenizer = set_tokenizer(vocab, max_seq_length=params.max_sequence_length)
     model = load_model(params.model, params, vocab=vocab, tokenizer=tokenizer)
     
+
     if params.model == 'bart':
-        dc = BartDataCollator(tokenizer, continuous_coefficient=use_continous_token)
+        dc = BartDataCollator(tokenizer)
+        label_names = ['labels']
+        
+    elif params.model == 'bart+':
+        dc = BartPlusDataCollator(tokenizer, continuous_coefficient=use_continous_token)
         
         if use_continous_token:
             label_names = ['labels', 'labels_for_regression']
@@ -183,7 +193,7 @@ def main():
         dataloader_num_workers      = 4,
         dataloader_pin_memory       = True,
         disable_tqdm                = True,
-        eval_steps                  = 100,
+        eval_steps                  = 1000,
         eval_strategy               = 'steps',
         label_names                 = label_names,
         logging_steps               = 50,
@@ -202,7 +212,7 @@ def main():
 
     # limit_steps_callback = LimitStepsCallback(max_steps_per_epoch=params.max_steps_per_epoch)
 
-    _compute_metrics = lambda x: compute_metrics(x, ignore_index=model.special_token_ids['pad_token_id'])
+    _compute_metrics = lambda x: compute_metrics(x, ignore_index=tokenizer.pad_token_id)
     trainer = Trainer(
         args                            = trainer_config,
         model                           = model,
@@ -215,13 +225,20 @@ def main():
         )
 
     ## Run training
-    wandb.init(project=params.exp_name, 
-               name=run_name,
-               group=params.group,
-               config=trainer_config)
+    if params.resume_from_checkpoint is not None:
+        wandb.init(project=params.exp_name, 
+                name=run_name,
+                group=params.group,
+                config=trainer_config)
+    else:
+        if params.wandb_id is None: 
+            raise ValueError('wandb_id is required when resuming from checkpoint')
+        else:
+            wandb.init(project=params.exp_name, resume='must', id=params.wandb_id)
+
 
     s = time()
-    train_result = trainer.train()
+    train_result = trainer.train(resume_from_checkpoint=params.resume_from_checkpoint)
     print(f'training time: [{time()-s:.1f} sec]')
 
     trainer.save_model()
@@ -231,8 +248,24 @@ def main():
     metrics.update(dataset_metrics)
 
     testloader = trainer.get_eval_dataloader()
+
+    modulo, th, quantize_fn = None, 0.0, None
+    if params.encoding_method == 'hybrid':
+        if params.field.startswith('GF'):
+            modulo, th = int(params.field[2:]), 0.5
+            quantize_fn = lambda x: x.round()
+        else:
+            th =0.05
+
+    scores = generation_accuracy(model, testloader, 
+                                 max_length=params.max_sequence_length, 
+                                 tokenizer=tokenizer, 
+                                 disable_tqdm=True,
+                                 th=th,
+                                 modulo=modulo,
+                                 model_name=params.model,
+                                 quantize_fn=quantize_fn)
     
-    scores = generation_accuracy(model, testloader, max_length=params.max_sequence_length, tokenizer=tokenizer, disable_tqdm=True)
     metrics.update({'test generation accuracy': scores['acc']})
     trainer.save_metrics("all", metrics)
     wandb.log(metrics)

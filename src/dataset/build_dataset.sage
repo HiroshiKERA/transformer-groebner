@@ -40,7 +40,7 @@ class Writer():
             
         Fstr = self.local_separator.join(Fstr)
         Gstr = self.local_separator.join(Gstr)
-        s = Fstr + self.global_separator + Gstr 
+        s = Fstr + self.global_separator + Gstr + '\n'
         
         num_tokens_F = int(len(Fstr.split()))
         num_tokens_G = int(len(Gstr.split()))
@@ -59,9 +59,9 @@ class Writer():
         ret = Parallel(n_jobs=n_jobs, backend="multiprocessing", verbose=True)(delayed(self._preprocess)(F, G, encoding=encoding, ring=ring, split_rational=split_rational) for F, G in dataset)
         
         dataset_str, stats = zip(*ret)
-        dataset_str = "\n".join(dataset_str)
+        # dataset_str = "\n".join(dataset_str)
         with open(filename, 'w') as f:
-            f.write(dataset_str)
+            f.writelines(dataset_str)
             # f.write("\n".join(dataset_str))
             # joblib.dump(dataset_str, f, compress=False)
             
@@ -106,7 +106,6 @@ def get_parser():
     parser.add_argument("--save_path", type=str, default="./dumped",
                         help="Experiment dump path")
     parser.add_argument("--config_path", type=str, default="./config")
-    # parser.add_argument("--task", type=str, default='shape', choices=['shape', 'cauchy'])
     parser.add_argument("--testset_only", action='store_true', default=False)
     parser.add_argument("--strictly_conditioned", action='store_true', default=False)
     parser.add_argument("--reduce_training_samples_to", type=int, default=None)
@@ -117,15 +116,7 @@ def get_parser():
 def build_dataset(get_dataset_builder, config, save_dir, tag='test', encoding='infix', n_jobs=-1, timing=False, strictly_conditioned=True, num_samples=None):
     
     field_name = config['field']
-    if field_name == 'QQ':
-        field = QQ
-    elif field_name == 'RR':
-        field = RR
-    elif field_name == 'ZZ':
-        field = ZZ
-    elif field_name[:2] == 'GF':
-        order = int(field_name[2:])
-        field = GF(order)
+    field = get_field(field_name)
 
     num_samples  = config[f'num_samples_{tag}'] if num_samples is None else num_samples
     num_variables = int(config['num_var'])

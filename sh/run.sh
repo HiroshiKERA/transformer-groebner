@@ -1,5 +1,5 @@
 wandb_project_name=neurips-cr
-gpu_id=1
+gpu_id=2
 
 task=shape
 nvars=2
@@ -16,20 +16,20 @@ positional_encoding=embedding
 epochs=8
 batch_size=16
 
-data_name=${task}_n=${nvars}_field=${field} #_init
+data_name=${task}_n=${nvars}_field=${field}
 data_path=data/${task}/${data_name}/data_${field}_n=${nvars}
 data_config_path=config/${data_name}.yaml
 
 model=bart
 
-group=${encoding_method}_${model} #_${positional_encoding} #_init
-_save_path=${field}_n=${nvars}_ep=${epochs}_bs=${batch_size}
+group=${encoding_method}_${model}
+_save_path=${field}_n=${nvars}
 save_path=results/${task}/${group}/${_save_path}
 run_name=${task}_${_save_path}
 
 mkdir -p $save_path
-CUDA_VISIBLE_DEVICES=$gpu_id python3 src/main.py  --save_path $save_path \
-                                            --model model \
+CUDA_VISIBLE_DEVICES=$gpu_id nohup python3 src/main.py  --save_path $save_path \
+                                            --model $model \
                                             --data_path $data_path \
                                             --data_config_path $data_config_path \
                                             --task $task \
@@ -43,13 +43,8 @@ CUDA_VISIBLE_DEVICES=$gpu_id python3 src/main.py  --save_path $save_path \
                                             --group $group \
                                             --exp_name $wandb_project_name \
                                             --exp_id $run_name \
-                                            --dryrun \
-                                            --positional_encoding $positional_encoding \
-                                            --encoding_method $encoding_method # > ${save_path}/run.log &
+                                            --regression_weights 0.01 \
+                                            --encoding_method $encoding_method > ${save_path}/run.log &
 
                                             # --max_steps_per_epoch $max_steps_per_epoch \
                                             # --positional_encoding embedding \
-
-gpu_id=$((gpu_id+1))
-
-# done

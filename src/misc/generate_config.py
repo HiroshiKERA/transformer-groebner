@@ -15,9 +15,9 @@ def generate_yaml(num_var, field, gb_type, density):
         'max_num_terms_G': 5,
         'max_size_F': num_var + 2,
         'num_duplicants': 1,
-        'density': density,  # 指定されたdensityを使用
-        'degree_sampling': ('', 'uniform')[0],
-        'term_sampling': ('', 'uniform')[0],
+        'density': density,  
+        'degree_sampling': ('', 'uniform')[0],  # no control; just showing the setting
+        'term_sampling': ('', 'uniform')[1],    # no control; just showing the setting
         'gb_type': gb_type
     }
     
@@ -53,7 +53,7 @@ def main():
     # Generate all combinations
     num_vars = range(2, 6)
     fields = ['GF7', 'GF31', 'QQ', 'RR']
-    gb_types = ['shape']
+    gb_types = ['shape', 'cauchy']
     
     # densitiesのリストが不足している場合、最後の値で埋める
     densities = args.densities + [args.densities[-1]] * (len(num_vars) - len(args.densities))

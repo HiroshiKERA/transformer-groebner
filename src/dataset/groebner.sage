@@ -11,26 +11,11 @@ from pprint import pprint
 # load('src/dataset/symbolic_utils.sage')
 load('src/dataset/polynomial_sampler.sage')
 
-np.random.seed((os.getpid() * int(time())) % 123456789)
+# np.random.seed((os.getpid() * int(time())) % 123456789)
 
 
 class Dataset_Builder_Groebner():
     def __init__(self, ring, config):
-    # def __init__(self, ring, max_rand_coeff=10, max_coeff=-1,
-    #              max_size=6, max_degree=4, max_num_terms=None, min_num_terms=1, max_degree_G=4, max_num_terms_G=None, 
-    #              num_duplicants=1, density=1.0, with_permutation=False, gb_type='shape'):
-#     num_var : 2
-# field : GF7
-# num_samples_train : 1000000
-# num_samples_test: 1000
-# max_degree_F : 3           # max degree of random_polynomials for generating F
-# max_degree_G : 5           # max degree of random_polynomials for generating G
-# max_num_terms_F : 2        # max number of terms of random_polynomials for generating F
-# max_num_terms_G : 5        # max number of terms of random_polynomials for generating G
-# max_size_F : 4             # maximum size of non-GB set F
-# num_duplicants : 1         # number of Fs to generate for each G
-# density : 1.0              # density of the matrix in the Bruhat decomposition
-
 
         self.ring = ring
         self.config = config
@@ -39,8 +24,8 @@ class Dataset_Builder_Groebner():
         self.coeff_bound        = config['coeff_bound'] if not ring.base_ring().is_finite() else 0
         self.max_coeff_F        = config['max_coeff_F'] if not ring.base_ring().is_finite() else 0
         self.max_coeff_G        = config['max_coeff_G'] if not ring.base_ring().is_finite() else 0
-        self.num_bound_F        = config['num_bound_F'] if ring == QQ else 0 
-        self.num_bound_G        = config['num_bound_G'] if ring == QQ else 0 
+        self.num_bound_F        = config['num_bound_F'] if ring.base_ring() == QQ else 0 
+        self.num_bound_G        = config['num_bound_G'] if ring.base_ring() == QQ else 0 
         self.max_degree_F       = config['max_degree_F']
         self.max_degree_G       = config['max_degree_G']
         self.max_num_terms_F    = config['max_num_terms_F']
@@ -53,29 +38,13 @@ class Dataset_Builder_Groebner():
         self.degree_sampling    = config['degree_sampling']
         self.term_sampling      = config['term_sampling']
         
-        
-        
-        # self.max_rand_coeff     = max_rand_coeff            # in case field is not finite; the 
-        # self.max_coeff          = max_coeff                 # in case field is not finite; the 
-        # self.max_size           = max_size
-        # self.max_degree         = max_degree
-        # self.max_degree_G        = max_degree_G
-        # self.max_num_terms      = max_num_terms
-        # self.min_num_terms      = min_num_terms
-        # self.max_num_terms_G     = max_num_terms_G
-        # self.num_duplicants     = num_duplicants
-        # self.density            = density
-        # self.with_permutation   = with_permutation
-        # self.gb_type            = gb_type
-        
 
     def random_shape_gb(self, ring, max_coeff=0, num_bound=0, max_degree=0, max_num_terms=0, degree_sampling='uniform', term_sampling='uniform', gb_type='shape', seed=100, strictly_conditioned=True):
         '''
         G = (x_0 - g1(x_{n-1}), x_1 - g2(x_{n-1}), ..., h(x_{n-1}))
         '''
         ## joblib with multiprocesssing cannot use identical random states at the begining.
-        ## 50 is supposed to be larger than the core numbers
-        if seed < 50: randstate.set_random_seed(seed)
+        randstate.set_random_seed()
         
         ts = time()
         
@@ -123,9 +92,9 @@ class Dataset_Builder_Groebner():
 
     def random_shape_gbs(self, num_samples, *args, **kwargs):
         
-        # Gs = [self.random_shape_gb(*args, **kwargs, seed=i) for i in range(num_samples)]
+        # Gs = [self.random_shape_gb(*args, **kwargs) for i in range(num_samples)]
         results = Parallel(n_jobs=self.n_jobs, backend="multiprocessing", verbose=True)(
-            delayed(self.random_shape_gb)(*args, **kwargs, seed=i) for i in range(num_samples)
+            delayed(self.random_shape_gb)(*args, **kwargs) for i in range(num_samples)
             )
 
         Gs, runtimes, stats = zip(*results)
@@ -133,12 +102,8 @@ class Dataset_Builder_Groebner():
         
         
     def random_cauchy_gb(self, max_degree, max_num_terms=None, seed=100):
-        '''
-        aa
-        '''
         ## joblib with multiprocesssing cannot use identical random states at the begining.
-        ## 50 is supposed to be larger than the core numbers
-        if seed < 50: randstate.set_random_seed(seed)
+        randstate.set_random_seed()
          
         ring = self.ring 
         field = self.ring.base_ring()
@@ -172,26 +137,21 @@ class Dataset_Builder_Groebner():
             F.append(expand(f5))
                 
         if field == QQ:
-            a = [ring.base_ring().random_element(num_bound=self.max_rand_coeff) for _ in range(num_vars)]
+            a = [ring.base_ring().random_element(num_bound=self.num_bound_G) for _ in range(num_vars)]
         elif field == RR:
-            a = [ring.base_ring().random_element(min=-self.max_rand_coeff, max=self.max_rand_coeff) for _ in range(num_vars)]
-            # a = [ring.base_ring().random_element(distribution='normal') for _ in range(num_vars)] * (1/0.5757)  # "normal" seems N(0, std=0.5757)
+            a = [ring.base_ring().random_element(min=-self.max_coeff_G, max=self.max_coeff_G) for _ in range(num_vars)]
         else:
             a = [ring.base_ring().random_element() for _ in range(num_vars)]
             
         for i in range(num_vars):
             F[i] = F[i].subs(dict(zip(ys, a)))
         
-        # for f in F: print(f)
-        # print(ideal(F))
         try: 
             G = matrix(ext_ring, num_vars, 1, F)
             G = G.change_ring(self.ring)
         except:
             assert(field == RR)
             G = matrix(ideal(F).ring(), num_vars, 1, F)
-            # G = G.change_ring(self.ring)
-        # G = G.change_ring(self.ring)
         
         runtime = time() - ts 
         
@@ -202,7 +162,7 @@ class Dataset_Builder_Groebner():
         Gs = []
         
         results = Parallel(n_jobs=self.n_jobs, backend="multiprocessing", verbose=True)(
-            delayed(self.random_cauchy_gb)(*args, **kwargs, seed=i) for i in range(num_samples)
+            delayed(self.random_cauchy_gb)(*args, **kwargs) for i in range(num_samples)
             )
 
         Gs, runtimes, stats = zip(*results)
@@ -215,7 +175,7 @@ class Dataset_Builder_Groebner():
         max_size: maximum size of target system (> num_vars)
         '''
         
-        if seed < 50: randstate.set_random_seed(seed)
+        randstate.set_random_seed()
     
         conditions = {'max_degree'      : max_degree, 
                       'min_degree'      : 1,
@@ -255,7 +215,7 @@ class Dataset_Builder_Groebner():
     
     def random_non_gbs(self, SGs, *args, **kwargs):
         
-        results = Parallel(n_jobs=self.n_jobs, backend="multiprocessing", verbose=True)(delayed(self.random_non_gb)(SG, *args, seed=i, **kwargs) for i, SG in enumerate(SGs))
+        results = Parallel(n_jobs=self.n_jobs, backend="multiprocessing", verbose=True)(delayed(self.random_non_gb)(SG, *args, **kwargs) for i, SG in enumerate(SGs))
 
         Fs, runtimes, stats = zip(*results)
 
@@ -294,7 +254,9 @@ class Dataset_Builder_Groebner():
                                                               degree_sampling = degree_sampling,
                                                               term_sampling = term_sampling)
         if self.gb_type == 'cauchy':
-            SGs, sg_runtimes, stats_G = self.random_cauchy_gbs(num_samples, max_degree_G, max_num_terms=max_num_terms_G)
+            SGs, sg_runtimes, stats_G = self.random_cauchy_gbs(num_samples, 
+                                                               max_degree_G, 
+                                                               max_num_terms=max_num_terms_G)
         
         if self.num_duplicants > 1:
             SGs = list(sum(zip(*it.repeat(SGs, self.num_duplicants)), ()))
@@ -416,6 +378,8 @@ def summarize_stats(stats, metric=['mean', 'std', 'max', 'min', 'median']):
     return summary
 
 def random_permutation_matrix(m):
+    randstate.set_random_seed()
+    
     perms = Permutations(list(1..m))
     P = matrix(Permutation(perms.random_element()))
     return P 

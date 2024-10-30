@@ -2,15 +2,14 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 from transformers import TrainerCallback, TrainerControl, TrainerState
 from transformers import TrainingArguments
+import torch 
 
 def preprocess_logits_for_metrics(outputs, labels):
     
-    if len(outputs) == 3:
-        logits, logits_for_regression = outputs[0], None
     if len(outputs) == 4:
-        logits, logits_for_regression = outputs[0], outputs[1]  # for bart model
-    
-    # logits, logits_for_regression = outputs[2], outputs[3]  # for transformer_base
+        logits, logits_for_regression = outputs[0], outputs[1]  # for bartplus model
+    else:
+        logits, logits_for_regression = outputs[0], torch.tensor([])  # for bart model
     
     predicted_ids = logits.argmax(dim=-1)
     

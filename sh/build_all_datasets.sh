@@ -1,6 +1,7 @@
-task="shape"
-num_variables_range=(2 3 4 5)
-fields=("GF7" "GF31" "QQ" "RR")
+# task="shape"
+task="cauchy"
+num_variables_range=(2 3)
+fields=("QQ")
 
 for num_variables in "${num_variables_range[@]}"; do
     for field in "${fields[@]}"; do

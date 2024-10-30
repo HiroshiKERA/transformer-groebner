@@ -4,6 +4,14 @@ from torch.utils.data import Dataset, DataLoader, IterableDataset
 from typing import List
 import numpy as np 
 
+def get_datacollator(model_name):
+    if model_name == 'bart':
+        return BartDataCollator
+    elif model_name == 'bart+':
+        return BartPlusDataCollator
+    else:
+        raise ValueError(f'invalid model name: {model_name}')
+
 def _load_data(data_path):
     try:
         with open(data_path, "r") as f:
@@ -85,7 +93,6 @@ class SimpleDataCollator:
 
     @torch.no_grad()
     def __call__(self, batch):
-        eos = self.tokenizer.eos_token
         input_texts = [item["input"] for item in batch]
         target_texts = [item["target"] for item in batch]
         
@@ -196,7 +203,36 @@ class HybridDataCollator:
             "target_continuous_labels"  : target_continuous_labels,
         }
 
+
 class BartDataCollator:
+    def __init__(self, tokenizer, **kwargs):
+        self.tokenizer = tokenizer
+
+    @torch.no_grad()
+    def __call__(self, batch):
+        input_texts = [item["input"] for item in batch]
+        target_texts = [item["target"] for item in batch]
+        
+        input_encodings = self.tokenizer(input_texts, padding='longest', return_tensors='pt')
+        target_encodings = self.tokenizer(target_texts, padding='longest', return_tensors='pt')
+
+        return {
+            'input_ids': input_encodings['input_ids'] ,
+            'decoder_input_ids': target_encodings['input_ids'][:, :-1].contiguous(),
+            'attention_mask': input_encodings['attention_mask'],  # NOTE: attantion mask given by tokenizer is 0/1 multiplicative mask (0 for no attention) but transformer use bool mask (True for no attention)
+            'decoder_attention_mask': target_encodings['attention_mask'][:, :-1].contiguous(),
+            'labels': target_encodings['input_ids'][:, 1:].contiguous(),
+        }
+        # return {
+        #     "input_ids"             : input_encodings['input_ids'],
+        #     "attention_mask"        : ~input_encodings['attention_mask'].bool(),  # NOTE: attantion mask given by tokenizer is 0/1 multiplicative mask (0 for no attention) but transformer use bool mask (True for no attention)
+        #     "decoder_input_ids"     : target_encodings['input_ids'],
+        #     "decoder_attention_mask": ~target_encodings['attention_mask'].bool(),
+        #     "labels": input_encodings['input_ids']
+        # }
+    
+    
+class BartPlusDataCollator:
     def __init__(self, tokenizer, continuous_coefficient=False, continuous_exponent=False, support_learning=False):
         self.tokenizer = tokenizer
         self.continuous_coefficient = continuous_coefficient
@@ -253,20 +289,16 @@ class BartDataCollator:
             input_continuous_labels     = torch.empty(*input_ids.shape, 0)
             target_continuous_labels    = torch.empty(*target_ids.shape, 0)
         
-        labels = target_ids[:, 1:].clone()
-        labels[labels == self.tokenizer.pad_token_id] = self.tokenizer.pad_token_id
-
-        continuous_labels           = target_continuous_labels[:, 1:].contiguous() 
+        labels_for_regression       = target_continuous_labels[:, 1:].contiguous() 
         target_continuous_labels    = target_continuous_labels[:, :-1].contiguous()
-
 
         return {
             "input_ids"                 : input_ids,
             "attention_mask"            : attention_mask,
             "decoder_input_ids"         : target_ids[:, :-1].contiguous(),
             "decoder_attention_mask"    : target_attention_mask,
-            "labels"                    : labels.contiguous(),
-            "labels_for_regression"     : continuous_labels,
+            "labels"                    : target_ids[:, 1:].contiguous(),
+            "labels_for_regression"     : labels_for_regression,
             "input_continuous_labels"   : input_continuous_labels,
             "target_continuous_labels"  : target_continuous_labels,
         }

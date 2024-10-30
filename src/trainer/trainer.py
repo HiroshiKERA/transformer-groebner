@@ -17,9 +17,6 @@ class CustomTrainer(Trainer):
         outputs = model(**inputs)
         loss = outputs['loss']
 
-        # Log to WandB
-        # if self.args.logging_steps > 0 and self.state.global_step % self.args.logging_steps == 0:
-        # ignore_index = model.special_token_ids['pad_token_id']
         ignore_index = model.config.pad_token_id
         self.log_metrics(outputs, inputs, ignore_index=ignore_index)
 
