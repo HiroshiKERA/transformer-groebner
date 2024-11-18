@@ -7,7 +7,7 @@ print_style=latex  # latex or sage
 
 task=shape
 num_variables_range=(2 3 4 5)
-fields=("QQ")
+fields=("GF7" "GF31" "QQ" "RR")
 
 get_density() {
     local num_var=$1

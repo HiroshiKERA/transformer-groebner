@@ -9,9 +9,9 @@ th_GF=0.5  # only used for finite fields
 th_QR=0.31 # only used for RR/QQ field
 
 # Define arrays for different configurations
-fields=("QQ")
+fields=("GF7" "GF31" "QQ" "RR")
 nvars=(2 3 4 5)
-encoding_methods=("standard" "hybrid")
+encoding_methods=("standard" "hybrid")  # standard embedding and hybrid embedding (see our paper)
 
 # Define density values for each nvar
 declare -A density_map

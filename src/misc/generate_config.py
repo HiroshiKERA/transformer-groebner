@@ -55,7 +55,6 @@ def main():
     fields = ['GF7', 'GF31', 'QQ', 'RR']
     gb_types = ['shape', 'cauchy']
     
-    # densitiesのリストが不足している場合、最後の値で埋める
     densities = args.densities + [args.densities[-1]] * (len(num_vars) - len(args.densities))
     
     for (num_var, density), field, gb_type in itertools.product(zip(num_vars, densities), fields, gb_types):

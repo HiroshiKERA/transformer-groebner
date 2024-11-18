@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Dict, Any, Optional
 from utils.formatters import format_metrics, format_timing_value, get_field_name
-from utils.config import TimingConfig, SupremacyConfig
+from utils.config import TimingConfig, SupremacyConfig, SuccessRateConfig
 from utils.log_reader import read_runtime_from_log, format_transformer_runtime
 
 def print_available_files(results: Dict[str, Dict[str, Any]]):
@@ -247,13 +247,19 @@ def generate_generation_latex(results: Dict[str, Dict[str, Any]]) -> str:
 def create_timing_table(
     results: Dict[str, Dict[str, Any]], 
     field: str, 
-    with_density: bool = False
+    with_density: bool = False,
+    metric='runtime'
 ) -> Optional[pd.DataFrame]:
     """Create timing summary table"""
     if should_skip_combination('shape', field):
         return None
         
-    config = TimingConfig()
+    if metric == 'runtime':
+        config = TimingConfig()
+    elif metric == 'success_rate':
+        config = SuccessRateConfig()
+    else:
+        raise ValueError(f"Invalid metric: {metric}")
     
     # Create column names with density information
     columns = []
@@ -314,12 +320,17 @@ def create_timing_table(
     
     return df
 
-def generate_timing_latex(results: Dict[str, Dict[str, Any]], field: str, with_density: bool = False) -> Optional[str]:
+def generate_timing_latex(results: Dict[str, Dict[str, Any]], field: str, with_density: bool = False, metric: str = 'runtime') -> Optional[str]:
     """Generate LaTeX table for timing experiments"""
     if should_skip_combination('shape', field):
         return None
         
-    config = TimingConfig()
+    if metric == 'runtime':
+        config = TimingConfig()
+    elif metric == 'success_rate':
+        config = SuccessRateConfig()
+    else:
+        raise ValueError(f"Invalid metric: {metric}")
     
     latex_template = r"""\begin{tabularx}{\linewidth}{l*{3}{Y}*{1}{Y}}
     \toprule
@@ -340,7 +351,7 @@ def generate_timing_latex(results: Dict[str, Dict[str, Any]], field: str, with_d
     ):
         values = []
         for n in config.ns:
-            if method_name == 'B.~(ours)':
+            if method_name == 'B.~(ours)' and metric == 'runtime':
                 # Read runtime from log file
                 runtime = read_runtime_from_log(field, n, with_density)
                 values.append(format_transformer_runtime(runtime))
@@ -355,21 +366,21 @@ def generate_timing_latex(results: Dict[str, Dict[str, Any]], field: str, with_d
             if path in results:
                 value = results[path].get(method_key)
                 if value is not None:
-                    values.append(format_timing_value(value, method_name))
+                    if metric == 'success_rate':
+                        values.append(f"{value*100:.1f}")
+                    else:
+                        values.append(format_timing_value(value, method_name))
                 else:
                     values.append("--")
             else:
                 values.append("--")
         
-        if method_name == 'B.~(ours)':
+        if method_name == 'B.~(ours)' and metric == 'runtime':
             latex_rows.append("    \\hline")
             row = f"    {method_name} & " + " & ".join(values) + " \\\\"
         else:
             row = f"    {method_name} & " + " & ".join(values) + " \\\\"
         latex_rows.append(row)
-        
-        # if method_name != 'B.~(ours)':
-            # latex_rows.append("    \\hline")
     
     latex_end = r"    \bottomrule \end{tabularx}"
     

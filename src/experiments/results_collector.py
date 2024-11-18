@@ -5,8 +5,8 @@ from utils.generators import (
     create_generation_table, 
     generate_timing_latex,
     create_timing_table, 
-    generate_supremacy_latex,
-    create_supremacy_table, 
+    # generate_supremacy_latex,
+    # create_supremacy_table, 
     display_table, 
     get_config,
 )
@@ -31,7 +31,7 @@ def process_generation_results(results: Dict[str, Dict[str, Any]]):
     print(generate_generation_latex(results))
     print("-" * 80)
     
-def process_timing_results(results: Dict[str, Dict[str, Any]]):
+def process_timing_results(results: Dict[str, Dict[str, Any]], metric='runtime'):
     """Process and display timing experiment results"""
     print("\nProcessing Timing Results...")
     
@@ -43,15 +43,15 @@ def process_timing_results(results: Dict[str, Dict[str, Any]]):
     
     for field in fields:
         for desc, with_density in conditions:
-            table = create_timing_table(results, field, with_density)
+            table = create_timing_table(results, field, with_density, metric=metric)
             if table is not None:  # Only display if table was created
                 display_table(table, f"Timing: {field} {desc}")
-                latex_code = generate_timing_latex(results, field, with_density)
+                latex_code = generate_timing_latex(results, field, with_density, metric=metric)
                 if latex_code is not None:
                     print(f"\nTiming LaTeX Table for {field} {desc}:")
                     print(latex_code)
 
-def process_supremacy_results(results: Dict[str, Dict[str, Any]]):
+def process__results(results: Dict[str, Dict[str, Any]]):
     """Process and display supremacy experiment results"""
     print("\nProcessing Timing Results...")
     
@@ -74,49 +74,39 @@ def process_supremacy_results(results: Dict[str, Dict[str, Any]]):
 def main():
     """Main function to run the results collection and analysis"""
     # Generation experiments
-    # print("Processing Generation Experiments...")
-    # gen_reader = ResultsReader(
-    #     experiment_name='generation',
-    #     yaml_filename='generation_results.yaml',
-    #     use_encoding_method=True,
-    #     use_density=True
-    # )
-    # gen_results = gen_reader.read_all_results(verbose=True)
-    # process_generation_results(gen_results)
-    
-    # # Timing experiments
-    # print("\nProcessing Timing Experiments...")
-    # timing_reader = ResultsReader(
-    #     experiment_name='timing',
-    #     yaml_filename='timing.yaml',
-    #     use_encoding_method=False,
-    #     use_density=False
-    # )
-    # timing_reader_ = ResultsReader(
-    #     experiment_name='timing',
-    #     yaml_filename='timing.yaml',
-    #     use_encoding_method=False,
-    #     use_density=True
-    # )
-    # timing_results = timing_reader.read_all_results(verbose=True)
-    # timing_results_ = timing_reader_.read_all_results(verbose=True)
-    # timing_results.update(timing_results_)
-
-    # process_timing_results(timing_results)
-    
-    
-    # Timing experiments
-    print("\nProcessing Transformer Supremacy Experiments...")
-    supremacy_reader = ResultsReader(
-        experiment_name='timing',
-        yaml_filename='transformer_supermacy_timeout=100.0.yaml',
-        use_encoding_method=False,
+    print("Processing Generation Experiments...")
+    gen_reader = ResultsReader(
+        experiment_name='generation',
+        yaml_filename='generation_results.yaml',
+        use_encoding_method=True,
         use_density=True
     )
+    gen_results = gen_reader.read_all_results(verbose=True)
+    process_generation_results(gen_results)
     
-    supremacy_results = supremacy_reader.read_all_results(verbose=True)
+    # # Timing experiments
+    print("\nProcessing Timing Experiments...")
+    metric = ('runtime', 'success_rate')[0]
     
-    process_supremacy_results(supremacy_results)
+    timing_reader = ResultsReader(
+        experiment_name='timing',
+        yaml_filename='timing.yaml',
+        use_encoding_method=False,
+        use_density=False,
+        timing_metric=metric
+    )
+    timing_reader_ = ResultsReader(
+        experiment_name='timing',
+        yaml_filename='timing.yaml',
+        use_encoding_method=False,
+        use_density=True,
+        timing_metric=metric
+    )
+    timing_results = timing_reader.read_all_results(verbose=True)
+    timing_results_ = timing_reader_.read_all_results(verbose=True)
+    timing_results.update(timing_results_)
+    
+    process_timing_results(timing_results, metric=metric)
     
 
 if __name__ == '__main__':

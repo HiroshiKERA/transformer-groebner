@@ -221,14 +221,16 @@ def main():
         timeout_limit = args.timeout * _sage_const_20 
         
         dataset = [raw_dataset[s['id']] for s in hard_sample_results]
+        results = {}
         for gb_algorithm in gb_algorithms:
-            print(f'### {gb_algorithm} ############################')
-            results = _timing_algo(dataset, gb_algorithm, verbose=True, timeout_limit=timeout_limit)
+            print(f'### {gb_algorithm} ############################', flush=True)
+            results[gb_algorithm] = _timing_algo(dataset, gb_algorithm, verbose=True, timeout_limit=timeout_limit)
             print()
             
-        for i, ret in enumerate(results):
-            for gb_algorithm in gb_algorithms:
-                hard_sample_results[i]['runtime'][gb_algorithm] = ret['runtime']
+        for gb_algorithm in gb_algorithms:
+            for i, _ in enumerate(dataset):
+                hard_sample_results[i]['runtime'][gb_algorithm] = results[gb_algorithm][i]['runtime']
+                hard_sample_results[i]['success'][gb_algorithm] = results[gb_algorithm][i]['success']
         
         save_path = os.path.join(args.save_path, f'transformer_supermacy_timeout={timeout_limit}.yaml')
         with open(save_path, 'w', encoding='utf-8') as f:

@@ -41,6 +41,22 @@ class TimingConfig(BaseConfig):
         'B. (ours)'
     )
     
+@dataclass
+class SuccessRateConfig(BaseConfig):
+    """Configuration for timing experiments (w.r.t. success rate)"""
+    task: str = 'shape'
+    yaml_filename: str = 'supremacy.yaml'
+    methods: Tuple[str, ...] = (
+        'libsingular:std_success_rate',
+        'libsingular:slimgb_success_rate',
+        'libsingular:stdfglm_success_rate',
+    )
+    method_names: Tuple[str, ...] = (
+        'F. (std)',
+        'F. (slimgb)',
+        'F. (stdfglm)',
+    )
+    
     
 @dataclass
 class SupremacyConfig(BaseConfig):

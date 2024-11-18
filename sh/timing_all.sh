@@ -2,11 +2,11 @@ experiment=timing
 timeout=5
 # timeout_long=100
 
-gpu_id=0
+gpu_id=1
 
 task=shape
 num_variables_range=(2 3 4 5)
-fields=("QQ")
+fields=("GF7" "GF31" "QQ")
 
 get_density() {
     local num_var=$1

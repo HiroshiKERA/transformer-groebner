@@ -2,7 +2,7 @@ from pathlib import Path
 import yaml
 from typing import List, Dict, Any, Optional
 from itertools import product
-from utils.config import GenerationConfig, TimingConfig
+from utils.config import GenerationConfig, TimingConfig, SuccessRateConfig
 
 class ResultsReader:
     """Class for reading experimental results from YAML files"""
@@ -12,7 +12,8 @@ class ResultsReader:
         yaml_filename: str = 'results.yaml',
         base_dir: str = 'results',
         use_encoding_method: bool = False,
-        use_density: bool = False
+        use_density: bool = False,
+        timing_metric: str = 'runtime'
     ):
         """Initialize ResultsReader
         
@@ -32,8 +33,12 @@ class ResultsReader:
         # Set up configuration based on experiment type
         if experiment_name == 'generation':
             self.config = GenerationConfig(yaml_filename=yaml_filename)
-        else:  # timing
+        elif experiment_name == 'timing' and timing_metric == 'runtime':
             self.config = TimingConfig(yaml_filename=yaml_filename)
+        elif experiment_name == 'timing' and timing_metric == 'success_rate':
+            self.config = SuccessRateConfig(yaml_filename=yaml_filename)
+        else:
+            raise ValueError(f"Invalid experiment name: {experiment_name}")
     
     def _construct_path(self, task: str, n: int, field: str, encoding_method: Optional[str] = None) -> Path:
         """Construct file path based on parameters"""
