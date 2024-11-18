@@ -1,6 +1,6 @@
 #!/bin/bash
-wandb_project_name=neurips-cr
-gpu_id=1
+wandb_project_name=transformer-gb
+gpu_id=0
 task=shape
 max_coefficient=100
 max_degree=20
@@ -8,9 +8,9 @@ epochs=8
 batch_size=16
 
 # Define arrays for different configurations
-fields=("QQ")
-nvars=(4)
-encoding_methods=("hybrid")
+fields=("GF7" "GF31" "QQ" "RR")
+nvars=(2 3 4 5)
+encoding_methods=("standard" "hybrid")
 regression_weights=0.01
 # cont_model=ffn2
 

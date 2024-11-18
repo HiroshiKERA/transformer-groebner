@@ -56,8 +56,6 @@ def get_parser():
 
     parser.add_argument("--continuous_embedding_model", type=str, default='ffn')
     parser.add_argument("--encoding_method",    type=str, default='standard')
-    # parser.add_argument("--token_register_size", type=int, default=2)
-    # parser.add_argument("--positional_encoding", type=str, default='sinusoidal', choices=['sinusoidal', 'embedding'])
     
     # vocab and tokenizer parameters
     parser.add_argument("--num_variables", type=int, default=2)
@@ -100,11 +98,7 @@ def get_parser():
     parser.add_argument("--dryrun", action='store_true', default=False)
     
     ## Dev
-    # parser.add_argument('--regression_weight', type=float, default=0.1)
     parser.add_argument('--regression_weights', nargs="*", type=float)
-    # parser.add_argument("--continuous_coefficient", action='store_true', default=False)
-    # parser.add_argument("--continuous_exponent", action='store_true', default=False)
-    # parser.add_argument("--support_learning", action='store_true', default=False)
     
 
     return parser
@@ -142,7 +136,6 @@ def main():
 
     ## Load model
     ### standard embedding
-    # if 'standard' in params.encoding_method:
     from dataset.tokernizer import set_tokenizer, set_vocab
     
     use_continous_token = params.encoding_method == 'hybrid'
@@ -169,13 +162,7 @@ def main():
             label_names = ['labels']
     else:
         raise ValueError(f'unknown model: {params.model}')
-    
-    # if not use_continous_token:
-    #     dc = SimpleDataCollator(tokenizer) 
-    #     label_names = ['labels']
-    # else:
-    #     dc = HybridDataCollator(tokenizer)
-    #     label_names = ['labels', 'labels_for_regression']
+
 
     tokenizer.save_pretrained(os.path.join(params.save_path, "tokenizer.json"))
 
@@ -197,15 +184,12 @@ def main():
         eval_strategy               = 'steps',
         label_names                 = label_names,
         logging_steps               = 50,
-        # max_steps_per_epoch         = params.max_steps_per_epoch,
         num_train_epochs            = params.epochs,
-        # optim                       = params.optimizer,
         output_dir                  = params.save_path,
         per_device_train_batch_size = params.batch_size // count_cuda_devices(),
         remove_unused_columns       = False,
         report_to                   = "wandb",
         run_name                    = run_name,
-        # save_steps                  = 100,
         save_total_limit            = 1,
         # torch_compile               = True,
     )
