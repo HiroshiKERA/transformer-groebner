@@ -28,7 +28,7 @@ else
         --shm-size=32g \
         -it \
         -v $(pwd):/app \
-        -v $SAGEPATH_MOUN \
+        -v $HOME/workspace/sage:/sage \
         -v $HOME/workspace/sage:/data/kera/workspace/sage \
         -e SAGE_ROOT=/sage \
         -e PATH="/sage/local/var/lib/sage/venv-python3.10/bin:/usr/bin:$PATH" \
