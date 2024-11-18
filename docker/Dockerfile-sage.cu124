@@ -1,0 +1,65 @@
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04 AS base
+# Set non-interactive mode (prevents blocking on input prompts)
+ENV DEBIAN_FRONTEND=noninteractive
+# Prevent creation of .pyc files
+ENV PYTHONDONTWRITEBYTECODE 1
+# Disable buffering
+ENV PYTHONUNBUFFERED 1
+# Path to root python environment
+ENV PYTHONPATH /usr/local/lib/python3.10/dist-packages
+# Directory for storing pretrained models from torchvision
+ENV TORCH_HOME /app/.cache
+
+WORKDIR /app
+
+RUN apt update && \
+    apt install -y \
+    wget \
+    bzip2 \
+    build-essential \
+    git \
+    git-lfs \
+    curl \
+    ca-certificates \
+    libsndfile1-dev \
+    libgl1 \
+    python3.10 \
+    python3-pip 
+
+# For SageMath (cf. https://sagemanifolds.obspm.fr/install_ubuntu.html)
+[SageMath dependencies remain unchanged]
+
+# ----------------------------------------------------------------
+# create user
+# ----------------------------------------------------------------
+# UID and GID are provided externally
+ARG USER_UID
+ARG USER_GID
+
+# Username and group name within container
+ARG USER_NAME=user
+ARG GROUP_NAME=user
+
+# If group doesn't exist, create a new one
+RUN if ! getent group $USER_GID >/dev/null; then \
+    groupadd -g $USER_GID $GROUP_NAME; \
+    fi
+
+# Create user
+RUN useradd -m -u $USER_UID -g $USER_GID -s /bin/bash $USER_NAME
+
+# Switch to created user
+USER $USER_NAME
+ENV PATH /home/$USER_NAME/.local/bin:$PATH
+
+# ----------------------------------------------------------------
+# Requirements are updated more frequently than torch, so install them separately
+RUN pip3 install --no-cache-dir -U pip setuptools wheel
+
+# ----------------------------------------------------------------
+FROM base AS torch-2.3.0
+
+RUN pip3 install --no-cache-dir torch==2.3.0+cu121 torchvision==0.18.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html 
+
+COPY requirements.txt /app
+RUN pip3 install --no-cache-dir -r requirements.txt
