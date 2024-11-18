@@ -77,7 +77,8 @@ for field in "${fields[@]}"; do
                 --regression_weights $regression_weights \
                 --encoding_method $encoding_method \
                 > ${save_path}/run.log &
-                
+                # --dryrun  # use this to check if all the training steps are working fine (remove "nohup" and ""> ${save_path}/run.log &")
+
                 # --continuous_embedding_model $cont_model \
 
             sleep 1

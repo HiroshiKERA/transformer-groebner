@@ -13,7 +13,7 @@ class CustomTrainer(Trainer):
         super().__init__(*args, **kwargs)
         self.log_history = []
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         outputs = model(**inputs)
         loss = outputs['loss']
 

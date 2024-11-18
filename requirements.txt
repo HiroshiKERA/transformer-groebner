@@ -8,7 +8,7 @@ scikit-learn
 tensorboard
 transformers
 wandb
-# SageMath 10.0+
+# SageMath 10.0+ (run below manually in terminal)
 # sage --pip install joblib
 # sage --pip install optimum
 # sage --pip install py-timeout
